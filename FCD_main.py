@@ -1,21 +1,21 @@
 # -*- coding: utf-8 -*-
-from pylab import mpl  
+from pylab import mpl
 mpl.rcParams['font.sans-serif'] = ['SimHei']
 import numpy as np
 import tensorflow as tf
 from matplotlib import pyplot as plt
 import h5py
-hidden1_size=32 #lstm中隐藏节点的个数
-hidden2_size=40
+hidden1_size=10 #lstm中隐藏节点的个数
+hidden2_size=20
 
 dnn_size=10
-num_layers =2#LSTM层数
-timesteps=256
+
+timesteps=64
 training_steps=2000#训练轮数
-batch_size=32 #batch大小
+batch_size=32# batch大小
 
 training_examples=5500#训练数据个数
-testing_examples=508#测试数据个数
+testing_examples=124#测试数据个数
 
 trainpath="traindata.mat"
 testpath="testdata.mat"
@@ -25,28 +25,29 @@ def read_datat(trainpath,testpath):
     testdata=h5py.File(testpath)
 
     train_sig=np.array(traindata["train_sig"],dtype=np.float32).T
-    train_sig=np.expand_dims(train_sig,1)
+    train_sig=np.expand_dims(train_sig,2)
     train_lab = np.array(traindata["train_lab"], dtype=np.float32).T
 
     test_sig=np.array(testdata["test_sig"],dtype=np.float32).T
-    test_sig=np.expand_dims(test_sig,1)
+    test_sig=np.expand_dims(test_sig,2)
     test_lab = np.array(testdata["test_lab"], dtype=np.float32).T
 
     return train_sig,train_lab,test_sig,test_lab
 
 def fully_connected(prev_layer,num_units,is_training):
-    layer=tf.layers.batch_normalization(prev_layer,training=is_training)
-    layer=tf.layers.dense(layer,num_units,use_bias=False,activation=None)
-    layer = tf.layers.batch_normalization(layer, training=is_training)
-    layer=tf.nn.tanh(layer)
-    output=tf.layers.dense(layer,1,use_bias=False,activation=tf.nn.sigmoid)
+    layer=tf.layers.dense(prev_layer,2,use_bias=False,activation=tf.nn.tanh)
+    # layer = tf.layers.batch_normalization(layer, training=is_training)
+    # layer=tf.nn.tanh(layer)
+    output=tf.layers.dense(layer,1,activation=tf.nn.sigmoid)
     return output
 
 def lstm_model(X,y,is_training):
+
     cell=tf.nn.rnn_cell.MultiRNNCell([tf.nn.rnn_cell.BasicLSTMCell(hidden1_size),tf.nn.rnn_cell.BasicLSTMCell(hidden2_size)])
     outputs,_=tf.nn.dynamic_rnn(cell,X,dtype=tf.float32)
     output=outputs[:,-1,:]
-    predictions=fully_connected(output,dnn_size,is_training)
+    # predictions=fully_connected(output,dnn_size,is_training)
+    predictions = tf.contrib.layers.fully_connected(output, 1, activation_fn=None)
     if not is_training:
         return predictions,None,None
     loss=tf.losses.mean_squared_error(labels=y,predictions=predictions)
