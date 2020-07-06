@@ -1,13 +1,12 @@
 clc
 clear all
-N_t=256;%滑动窗长
+N_t=64;%滑动窗长
 fre_N=200;%频率集点数
 freset=10e5:(10e5/fre_N):20e5;%频率集
 fs=40e5;%采样频率
 
 fm=1e3;%调制频率
-train_num=5000;
-test_num=500;
+train_num=10000;
 %% 构造训练数据集
 train_lab=[];
 train_sig=[];
@@ -15,7 +14,7 @@ tao=10;
 show=1;
 for n=1:train_num
     %构造跳变数据
-    split_posi=randi([2,254],1);%跳频点
+    split_posi=randi([2,N_t-2],1);%跳频点
     tl=(0:split_posi-1)*(1/fs);%l左
     tr=(split_posi:N_t-1)*(1/fs);%r右
 
@@ -52,10 +51,10 @@ for n=1:train_num/10
 end
 save('traindata.mat','train_sig','train_lab')
 %% 构造测试数据
-test_fre=[12e5,18e5,13e5];
+test_fre=[12e5,18e5,13e5,20e5];
 test_lab=[];
 test_sig=[];
-for n=1:2
+for n=1:length(test_fre)-1
     %单频
     test_lab=[test_lab;0];
     signal=exp(1i*2*pi*(test_fre(n)+randi([1,4],1)*fm)*t);
@@ -79,7 +78,7 @@ for n=1:2
         spec=mapminmax(spec,0,1);
         
         test_sig=[test_sig;spec];
-        if hop==128
+        if hop==N_t/2
            ff=(0:N_t-1)*(fs/N_t);
            figure()
            plot(ff,spec);

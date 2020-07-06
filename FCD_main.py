@@ -10,12 +10,11 @@ hidden2_size=20
 
 dnn_size=10
 
-timesteps=64
-training_steps=2000#训练轮数
+timesteps=64#fixed
+training_steps=1300#训练轮数
 batch_size=32# batch大小
 
-training_examples=5500#训练数据个数
-testing_examples=124#测试数据个数
+testing_examples=186#测试数据个数
 
 trainpath="traindata.mat"
 testpath="testdata.mat"
@@ -35,24 +34,25 @@ def read_datat(trainpath,testpath):
     return train_sig,train_lab,test_sig,test_lab
 
 def fully_connected(prev_layer,num_units,is_training):
-    layer=tf.layers.dense(prev_layer,2,use_bias=False,activation=tf.nn.tanh)
+    # layer = tf.layers.batch_normalization(prev_layer, training=is_training)
+    layer=tf.layers.dense(prev_layer,num_units,use_bias=True,activation=tf.nn.tanh)
     # layer = tf.layers.batch_normalization(layer, training=is_training)
     # layer=tf.nn.tanh(layer)
-    output=tf.layers.dense(layer,1,activation=tf.nn.sigmoid)
+    output=tf.layers.dense(layer,1,activation=None)
     return output
 
 def lstm_model(X,y,is_training):
 
-    cell=tf.nn.rnn_cell.MultiRNNCell([tf.nn.rnn_cell.BasicLSTMCell(hidden1_size),tf.nn.rnn_cell.BasicLSTMCell(hidden2_size)])
-    outputs,_=tf.nn.dynamic_rnn(cell,X,dtype=tf.float32)
-    output=outputs[:,-1,:]
-    # predictions=fully_connected(output,dnn_size,is_training)
-    predictions = tf.contrib.layers.fully_connected(output, 1, activation_fn=None)
+    cell = tf.nn.rnn_cell.MultiRNNCell([tf.nn.rnn_cell.BasicLSTMCell(hidden1_size),tf.nn.rnn_cell.BasicLSTMCell(hidden2_size)])
+    outputs, _ = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
+    output = outputs[:, -1, :]
+
+    predictions=fully_connected(output,dnn_size,is_training)
     if not is_training:
         return predictions,None,None
     loss=tf.losses.mean_squared_error(labels=y,predictions=predictions)
     with tf.control_dependencies(tf.get_collection(tf.GraphKeys.UPDATE_OPS)):
-        train_op=tf.contrib.layers.optimize_loss(loss,tf.train.get_global_step(),optimizer="Adagrad",learning_rate=0.1)
+        train_op=tf.train.RMSPropOptimizer(0.001).minimize(loss)
     return predictions,loss,train_op
 
 def train(sess,train_X,train_y):
