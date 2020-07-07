@@ -10,7 +10,7 @@ hidden2_size=20
 
 dnn_size=10
 
-timesteps=64#fixed
+timesteps=64
 training_steps=1300#训练轮数
 batch_size=32# batch大小
 
@@ -33,11 +33,8 @@ def read_datat(trainpath,testpath):
 
     return train_sig,train_lab,test_sig,test_lab
 
-def fully_connected(prev_layer,num_units,is_training):
-    # layer = tf.layers.batch_normalization(prev_layer, training=is_training)
+def fully_connected(prev_layer,num_units):
     layer=tf.layers.dense(prev_layer,num_units,use_bias=True,activation=tf.nn.tanh)
-    # layer = tf.layers.batch_normalization(layer, training=is_training)
-    # layer=tf.nn.tanh(layer)
     output=tf.layers.dense(layer,1,activation=None)
     return output
 
@@ -47,7 +44,7 @@ def lstm_model(X,y,is_training):
     outputs, _ = tf.nn.dynamic_rnn(cell, X, dtype=tf.float32)
     output = outputs[:, -1, :]
 
-    predictions=fully_connected(output,dnn_size,is_training)
+    predictions=fully_connected(output,dnn_size)
     if not is_training:
         return predictions,None,None
     loss=tf.losses.mean_squared_error(labels=y,predictions=predictions)
@@ -56,6 +53,7 @@ def lstm_model(X,y,is_training):
     return predictions,loss,train_op
 
 def train(sess,train_X,train_y):
+
     ds=tf.data.Dataset.from_tensor_slices((train_X,train_y))
     ds=ds.repeat().shuffle(1000).batch(batch_size)#repeat:遍历数据集次数 shuffle:混乱程度
     X,y=ds.make_one_shot_iterator().get_next()
@@ -66,16 +64,27 @@ def train(sess,train_X,train_y):
 
     #初始化变量
     sess.run(tf.global_variables_initializer())
+    saver = tf.train.Saver()
     for i in range(training_steps):
         _,l=sess.run([train_op,loss])#使用dataset而不是placeholder导入数据
         if i%100==0:
             print("train step:"+str(i)+",loss"+str(l))
+    #保存模型
+    saver.save(sess, "model\model.ckpt")
+
 def run_eval(sess,test_X,test_y):
     ds=tf.data.Dataset.from_tensor_slices((test_X,test_y))
     ds=ds.batch(1)
     X,y=ds.make_one_shot_iterator().get_next()
-    with tf.variable_scope("model",reuse=True):#reuse训练时的变量
+
+    # 加载图
+
+    with tf.variable_scope("model"):
         prediction,_,_=lstm_model(X,[0.0],False)
+
+        saver = tf.train.Saver()
+        saver.restore(sess, "model\model.ckpt")
+
         predictions=[]
         labels=[]
         for i in range(testing_examples):
@@ -97,10 +106,13 @@ def run_eval(sess,test_X,test_y):
         plt.show()
 
 if __name__ == '__main__':
+    t_lab=False
     train_X, train_y, test_X, test_y = read_datat(trainpath, testpath)
 
     with tf.Session() as sess:
         #训练模型
-        train(sess,train_X,train_y)
+        if t_lab:
+            train(sess,train_X,train_y)
         #进行预测
-        run_eval(sess,test_X,test_y)
+        else:
+            run_eval(sess,test_X,test_y)

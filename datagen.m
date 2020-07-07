@@ -51,7 +51,7 @@ for n=1:train_num/10
 end
 save('traindata.mat','train_sig','train_lab')
 %% 构造测试数据
-test_fre=[12e5,18e5,13e5,20e5];
+test_fre=[12e5,18e5,13e5,10e5];
 test_lab=[];
 test_sig=[];
 for n=1:length(test_fre)-1
