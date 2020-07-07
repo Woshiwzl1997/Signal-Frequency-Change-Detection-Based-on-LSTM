@@ -18,4 +18,6 @@ label减小至0.
 
 输入LSTM的数据格式为(batchsize，timesteps=时域采样点数，1)
 
+![result](https://github.com/Woshiwzl1997/Signal-Frequency-Change-Detection-Based-on-LSTM/blob/master/Figure_1.png)
+
 
