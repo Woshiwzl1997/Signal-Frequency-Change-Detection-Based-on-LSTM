@@ -8,6 +8,9 @@ tensorflow:1.8.0
 python:3.6
 
 ## 开始：
+datagen.m 用来生成跳频信号的频谱与标签数据保存在traindata.mat与testdata.mat。
+
+数据集已经上传，可以直接运行：
 python FCD_main.py
 
 ## 说明：
